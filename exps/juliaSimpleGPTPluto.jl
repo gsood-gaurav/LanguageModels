@@ -41,6 +41,7 @@ Either we can have long sequence of integers and short vocab size or short seque
 
 # ╔═╡ e9d50592-fe44-4ea0-ad41-95b3261b2736
 begin
+	# This is effectively a tokenizer
 	# create a mapping from char to integers
 	stoi = Dict{Char, Int}([(v, k) for (k, v) in enumerate(chars)])
 	# create a mapping from int to char
@@ -59,8 +60,9 @@ end
 begin
 	# Let's encode the entire text dataset and store into a vector
 	data = encode(text)
-	typeof(data)
-	println(data[1:1000])
+	println("Length of encoded data $(length(data))")
+	@assert length(data) == length(text) "Not equal"
+	# println(data[1:1000])
 end
 
 # ╔═╡ 0fbbea6c-8b90-4fc7-89ff-98844fb7c2de
@@ -116,6 +118,17 @@ begin
 		end
 	end
 	
+end
+
+# ╔═╡ 3515cfac-bcfc-4a4c-8d45-c4f3b24740cc
+md"""
+## BiGram language Model
+"""
+
+# ╔═╡ 1e89eb1b-3823-4550-a277-6afbf734a20e
+struct BiGramLanguageModel
+	vocab_size::Int
+	# token_embedding_table = Embedding(vocab_size=>vocab_size)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -939,5 +952,7 @@ version = "17.4.0+2"
 # ╠═d5be23e9-62d6-43e0-b1d0-7e99ffbe498e
 # ╠═70bbeffb-3ad7-4220-ac4d-0052b2a5a8e0
 # ╠═a4b2dcf7-1364-4669-ad1c-8306ff0518ef
+# ╠═3515cfac-bcfc-4a4c-8d45-c4f3b24740cc
+# ╠═1e89eb1b-3823-4550-a277-6afbf734a20e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

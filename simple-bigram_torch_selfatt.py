@@ -8,7 +8,7 @@ batch_size = 32
 block_size = 8
 max_iters = 5000
 eval_interval = 500
-learning_rate = 1e-3
+learning_rate = 3e-4
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 eval_iters = 200
 n_embd = 32
@@ -87,15 +87,19 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, head_size):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.proj = nn.Linear(num_heads*head_size, n_embd)
 
     def forward(self, x):
-        return torch.cat([h(x) for h in self.heads], dim=-1)
+        x = torch.cat([h(x) for h in self.heads], dim=-1)
+        x = self.proj(x)
+
+        return x
 
 
 class FeedForward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
-        self.ffwd = nn.Sequential(nn.Linear(n_embd, n_embd), nn.ReLU())
+        self.ffwd = nn.Sequential(nn.Linear(n_embd, 4*n_embd), nn.ReLU(), nn.Linear(4*n_embd, n_embd))
 
     def forward(self, x):
         # It happens at token level
@@ -108,10 +112,12 @@ class Block(nn.Module):
         head_size = n_embd // n_head
         self.mh_attention = MultiHeadAttention(n_head, n_embd//4)
         self.ffwd = FeedForward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
     
     def forward(self, x):
-        x = self.mh_attention(x)
-        x = self.ffwd(x)
+        x = x + self.mh_attention(self.ln1(x))
+        x = x + self.ffwd(self.ln2(x))
 
         return x
 
@@ -127,7 +133,8 @@ class BiGramLanguageModel(nn.Module):
         self.ffwd = FeedForward(n_embd)
         self.blocks = nn.Sequential(Block(n_embd, 4),
                                     Block(n_embd, 4),
-                                    Block(n_embd, 4)
+                                    Block(n_embd, 4),
+                                    nn.LayerNorm(n_embd)
         )
     
     def forward(self, xb, target=None):

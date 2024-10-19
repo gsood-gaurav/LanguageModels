@@ -92,6 +92,16 @@ class MultiHeadAttention(nn.Module):
         return torch.cat([h(x) for h in self.heads], dim=-1)
 
 
+class FeedForward(nn.Module):
+    def __init__(self, n_embd):
+        super().__init__()
+        self.ffwd = nn.Sequential(nn.Linear(n_embd, n_embd), nn.ReLU())
+
+    def forward(self, x):
+        # It happens at token level
+        return self.ffwd(x)
+
+
 class BiGramLanguageModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -101,6 +111,7 @@ class BiGramLanguageModel(nn.Module):
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
         self.sa_head = MultiHeadAttention(4, n_embd//4)
+        self.ffwd = FeedForward(n_embd)
     
     def forward(self, xb, target=None):
         B, T = xb.shape
@@ -108,6 +119,7 @@ class BiGramLanguageModel(nn.Module):
         pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T, C)
         x = token_emb + pos_emb #(B, T, C)
         x = self.sa_head(x)
+        x = self.ffwd(x)
         logits = self.lm_head(x)  # (B, T, vocab_size)
         B, T, C = logits.shape
         # cross entropy takes input a flat structure as follows in case of logits.
